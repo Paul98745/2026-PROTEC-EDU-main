@@ -1,0 +1,151 @@
+<main class="admin-shell">
+  <header>
+    <a routerLink="/inicio" class="brand">Protec<span>Edu</span></a
+    ><a routerLink="/inicio">Volver al inicio</a>
+  </header>
+  <section class="intro">
+    <p class="eyebrow">Administración institucional</p>
+    <h1>Usuarios y accesos</h1>
+    <p>Gestiona usuarios, roles, permisos y el registro de actividad de tu institución.</p>
+  </section>
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+
+  <section class="workspace">
+    <form [formGroup]="form" (ngSubmit)="create()">
+      <h2>Crear usuario</h2>
+      <label>DNI<input formControlName="documentNumber" inputmode="numeric" /></label>
+      <label
+        >Periodo académico (1-9)<input
+          formControlName="academicPeriod"
+          type="number"
+          min="1"
+          max="9"
+      /></label>
+      <label>Correo<input formControlName="email" type="email" /></label>
+      <label
+        >Rol<select formControlName="roleCode">
+          @for (role of roles(); track role.id) {
+            <option [value]="role.code" [disabled]="!role.isActive">{{ role.name }}</option>
+          }
+        </select></label
+      >
+      <button type="submit" [disabled]="creating()">
+        {{ creating() ? 'Creando…' : 'Crear usuario' }}
+      </button>
+      <small
+        >El código institucional se genera una sola vez y no puede editarse. La contraseña temporal
+        inicial es el DNI.</small
+      >
+    </form>
+    <section class="users panel">
+      <div class="list-head">
+        <h2>Usuarios registrados</h2>
+        <button class="refresh" type="button" (click)="reload()">Actualizar</button>
+      </div>
+      @for (item of users(); track item.membershipId) {
+        <article>
+          <div>
+            <strong>{{ item.studentCode }}</strong
+            ><span>{{ item.user.email || 'Sin correo' }}</span
+            ><span>{{ roleNames(item) }}</span>
+          </div>
+          <div class="status-actions">
+            <span
+              class="status"
+              [class.blocked]="item.user.status === 'BLOQUEADA'"
+              [class.inactive]="item.user.status === 'INACTIVA'"
+              >{{ item.user.status }}</span
+            ><button type="button" (click)="setStatus(item, 'ACTIVA')">Activar</button
+            ><button type="button" (click)="setStatus(item, 'INACTIVA')">Desactivar</button
+            ><button type="button" (click)="setStatus(item, 'BLOQUEADA')">Bloquear</button>
+          </div>
+        </article>
+      } @empty {
+        <p class="empty">No hay usuarios para mostrar.</p>
+      }
+    </section>
+  </section>
+
+  <section class="management-grid">
+    <section class="panel role-list">
+      <div class="list-head">
+        <h2>Roles</h2>
+        <span>{{ roles().length }}</span>
+      </div>
+      @for (role of roles(); track role.id) {
+        <article>
+          <div>
+            <strong>{{ role.name }}</strong
+            ><span>{{ role.code }} · {{ rolePermissions(role).join(', ') || 'Sin permisos' }}</span>
+          </div>
+          <div class="status-actions">
+            <span class="status" [class.inactive]="!role.isActive">{{
+              role.isActive ? 'ACTIVO' : 'INACTIVO'
+            }}</span
+            ><button type="button" (click)="editRole(role)">Editar</button
+            ><button type="button" (click)="toggleRole(role)">
+              {{ role.isActive ? 'Desactivar' : 'Activar' }}
+            </button>
+          </div>
+        </article>
+      } @empty {
+        <p class="empty">No tienes permiso para ver roles.</p>
+      }
+    </section>
+    <form [formGroup]="roleForm" (ngSubmit)="saveRole()">
+      <div class="list-head">
+        <h2>{{ editingRoleId() ? 'Editar rol' : 'Crear rol' }}</h2>
+        @if (editingRoleId()) {
+          <button class="refresh" type="button" (click)="cancelRoleEdit()">Cancelar</button>
+        }
+      </div>
+      <label
+        >Código<input
+          formControlName="code"
+          [readOnly]="!!editingRoleId()"
+          placeholder="EJ. SECRETARIA" /></label
+      ><label>Nombre<input formControlName="name" /></label
+      ><label>Descripción<input formControlName="description" /></label
+      ><label
+        >Permisos (separados por coma)<input
+          formControlName="permissionCodes"
+          placeholder="users.view, profile.read" /></label
+      ><button type="submit">{{ editingRoleId() ? 'Guardar cambios' : 'Crear rol' }}</button>
+    </form>
+    <section class="panel">
+      <h2>Permisos disponibles</h2>
+      <div class="chips">
+        @for (permission of permissions(); track permission.id) {
+          <span>{{ permission.resource }}.{{ permission.action }}</span>
+        } @empty {
+          <p class="empty">No tienes permiso para ver permisos.</p>
+        }
+      </div>
+      <form class="compact-form" [formGroup]="permissionForm" (ngSubmit)="createPermission()">
+        <label>Módulo<input formControlName="resource" placeholder="reportes" /></label
+        ><label>Acción<input formControlName="action" placeholder="view" /></label
+        ><button type="submit">Crear permiso</button>
+      </form>
+    </section>
+  </section>
+
+  <section class="panel audit-panel">
+    <div class="list-head">
+      <h2>Auditoría reciente</h2>
+      <button class="refresh" type="button" (click)="reload()">Actualizar</button>
+    </div>
+    @for (event of auditEvents(); track event.id) {
+      <article>
+        <div>
+          <strong>{{ event.eventType }}</strong
+          ><span>{{ eventActor(event) }} · {{ event.institution?.code || 'Global' }}</span>
+        </div>
+        <time>{{ event.occurredAt }}</time>
+      </article>
+    } @empty {
+      <p class="empty">No tienes permiso para ver la auditoría o no hay eventos.</p>
+    }
+  </section>
+</main>

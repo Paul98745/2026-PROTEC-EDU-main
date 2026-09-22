@@ -1,0 +1,42 @@
+<main class="home-shell">
+  @if (loading()) {
+    <p class="loading">Preparando tu espacio…</p>
+  } @else if (auth.user(); as user) {
+    <header>
+      <a class="brand" routerLink="/inicio">Protec<span>Edu</span></a>
+      <button class="logout" type="button" (click)="logout()" [disabled]="leaving()">
+        {{ leaving() ? 'Cerrando…' : 'Cerrar sesión' }}
+      </button>
+    </header>
+
+    <section class="welcome-card">
+      <p class="eyebrow">{{ user.institution.name }}</p>
+      <h1>Hola, {{ user.studentCode }}</h1>
+      <p>
+        Tu sesión está activa. Los módulos académicos aparecerán aquí según los permisos asignados a
+        tu perfil.
+      </p>
+    </section>
+
+    <section class="details" aria-label="Resumen de acceso">
+      <article>
+        <span>Institución</span>
+        <strong>{{ user.institution.code }}</strong>
+      </article>
+      <article>
+        <span>Perfil</span>
+        <strong>{{ user.roles.join(', ') || 'Estudiante' }}</strong>
+      </article>
+      <article>
+        <span>Permisos</span>
+        <strong>{{ user.permissions.length }}</strong>
+      </article>
+    </section>
+    @if (user.permissions.includes('users.view')) {
+      <a class="admin-link" routerLink="/administracion">Administrar usuarios de la institución</a>
+    }
+    @if (user.isSuperAdministrator || user.permissions.includes('people.view')) {
+      <a class="admin-link" routerLink="/personas">Gestionar personas y documentos</a>
+    }
+  }
+</main>

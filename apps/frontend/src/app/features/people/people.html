@@ -1,0 +1,387 @@
+<main class="people-shell">
+  <header>
+    <a class="brand" routerLink="/inicio">Protec<span>Edu</span></a
+    ><a routerLink="/inicio">Volver al inicio</a>
+  </header>
+  <section class="intro">
+    <p class="eyebrow">{{ auth.user()?.institution?.name }}</p>
+    <h1>Personas</h1>
+    <p>Datos personales, familiares y documentos en una sola ficha.</p>
+  </section>
+  @if (error()) {
+    <p class="notice error" role="alert">{{ error() }}</p>
+  }
+  @if (message()) {
+    <p class="notice success" role="status">{{ message() }}</p>
+  }
+  <div class="workspace" [class.with-form]="showForm()">
+    <section class="panel directory" aria-label="Directorio de personas">
+      <div class="panel-title">
+        <h2>Directorio</h2>
+        @if (can('create')) {
+          <button type="button" (click)="create()" [disabled]="busy() || dirty">
+            Nueva persona
+          </button>
+        }
+      </div>
+      <form class="search" (ngSubmit)="reload()">
+        <label for="search">Buscar por nombre, apellido o documento</label>
+        <div>
+          <input
+            id="search"
+            name="search"
+            [(ngModel)]="search"
+            maxlength="100"
+            type="search"
+          /><button type="submit" [disabled]="loading()">Buscar</button>
+        </div>
+      </form>
+      @if (loading()) {
+        <p role="status">Cargando personas…</p>
+      } @else {
+        <p class="muted">{{ total() }} personas registradas</p>
+        <ul class="person-list">
+          @for (person of items(); track person.id) {
+            <li>
+              <button
+                class="person-row"
+                type="button"
+                (click)="open(person.id)"
+                [disabled]="busy() || dirty"
+                [class.selected]="editingId() === person.id"
+              >
+                <strong
+                  >{{ person.firstName }} {{ person.lastName }} {{ person.secondLastName }}</strong
+                ><span>{{ person.documentType }} {{ person.documentNumber }}</span
+                ><span class="meta">{{ person.profile }} · {{ person.status }}</span>
+              </button>
+            </li>
+          } @empty {
+            <li class="empty">No hay personas que coincidan con la búsqueda.</li>
+          }
+        </ul>
+        <nav class="pagination" aria-label="Páginas del directorio">
+          <button type="button" (click)="reload(page() - 1)" [disabled]="page() <= 1">
+            Anterior</button
+          ><span>Página {{ page() }}</span
+          ><button type="button" (click)="reload(page() + 1)" [disabled]="page() * 25 >= total()">
+            Siguiente
+          </button>
+        </nav>
+      }
+    </section>
+    @if (showForm()) {
+      <section class="panel editor" aria-label="Ficha de persona">
+        <div class="panel-title">
+          <h2>{{ editingId() ? 'Ficha personal' : 'Registrar persona' }}</h2>
+          <button type="button" class="secondary" (click)="close()" [disabled]="busy()">
+            {{ dirty ? 'Descartar cambios y cerrar' : 'Cerrar' }}
+          </button>
+        </div>
+        <p class="muted">
+          Los campos marcados con * son obligatorios. Los documentos pueden completarse después.
+        </p>
+        <form
+          #personForm="ngForm"
+          (ngSubmit)="save(personForm)"
+          (input)="dirty = true"
+          (change)="dirty = true"
+        >
+          <fieldset [disabled]="busy() || !editable()">
+            <legend>Perfil e identificación</legend>
+            <div class="grid">
+              <label
+                >Tipo de persona *<select
+                  name="profile"
+                  [(ngModel)]="model.profile"
+                  (ngModelChange)="profileChanged()"
+                  required
+                >
+                  <option value="ALUMNO">Alumno</option>
+                  <option value="DOCENTE">Docente</option>
+                  <option value="COLABORADOR">Colaborador</option>
+                </select></label
+              >
+              <label
+                >Estado de la ficha *<select name="status" [(ngModel)]="model.status" required>
+                  <option value="ACTIVO">Activo</option>
+                  <option value="INACTIVO">Inactivo</option>
+                  <option value="SUSPENDIDO">Suspendido</option>
+                </select></label
+              >
+              <label
+                >Fecha de activación *<input
+                  type="date"
+                  name="activatedAt"
+                  [(ngModel)]="model.activatedAt"
+                  required
+              /></label>
+              <label
+                >Tipo de documento *<select
+                  name="documentType"
+                  [(ngModel)]="model.documentType"
+                  (ngModelChange)="model.documentNumber = ''"
+                  required
+                >
+                  <option>DNI</option>
+                  <option>CE</option>
+                  <option value="PASAPORTE">Pasaporte</option>
+                  <option>RUC</option>
+                </select></label
+              >
+              <label
+                >Número de documento *<input
+                  name="documentNumber"
+                  [ngModel]="model.documentNumber"
+                  (ngModelChange)="documentInput($event)"
+                  [pattern]="documentPattern()"
+                  [maxlength]="documentMax()"
+                  [attr.inputmode]="
+                    model.documentType === 'DNI' || model.documentType === 'RUC'
+                      ? 'numeric'
+                      : 'text'
+                  "
+                  required
+                /><small>DNI: 8 dígitos. RUC: 11. CE: 9–12. Pasaporte: 6–20.</small></label
+              >
+            </div>
+          </fieldset>
+          <fieldset [disabled]="busy() || !editable()">
+            <legend>Datos personales y contacto</legend>
+            <div class="grid">
+              @for (field of fields; track field.key) {
+                <label
+                  >{{ field.label }}{{ field.required ? ' *' : ''
+                  }}<input
+                    [id]="field.key"
+                    [type]="field.type"
+                    [name]="field.key"
+                    [(ngModel)]="model[field.key]"
+                    [required]="field.required"
+                    [maxlength]="field.max"
+                    [email]="field.type === 'email'"
+                /></label>
+              }
+            </div>
+          </fieldset>
+          <fieldset [disabled]="busy() || !editable() || !can('edit')">
+            <legend>Cuenta de acceso</legend>
+            <label
+              >Vincular cuenta existente<select
+                name="membershipId"
+                [(ngModel)]="model.membershipId"
+              >
+                <option value="">Sin cuenta vinculada</option>
+                @for (account of accounts(); track account.id) {
+                  <option [value]="account.id">
+                    {{ account.studentCode }} · {{ account.user.documentType }}
+                    {{ account.user.documentNumber }}
+                  </option>
+                }
+              </select></label
+            >
+            <p class="muted">
+              La cuenta debe tener el mismo documento. El perfil y el estado de esta ficha no
+              cambian sus roles ni su acceso al sistema.
+            </p>
+          </fieldset>
+          <fieldset [disabled]="busy() || !editable()">
+            <legend>Familiares</legend>
+            <p class="muted">Opcional. En hijos puedes ingresar nombres y apellidos completos.</p>
+            @for (relative of model.relatives; track $index; let i = $index) {
+              <div class="relative">
+                <div class="panel-title">
+                  <h3>
+                    {{
+                      relative.relationship === 'HIJO'
+                        ? 'Hijo/a'
+                        : relative.relationship === 'PADRE'
+                          ? 'Padre'
+                          : 'Madre'
+                    }}
+                  </h3>
+                  <button class="secondary" type="button" (click)="removeRelative(i)">
+                    Quitar familiar
+                  </button>
+                </div>
+                <div class="grid">
+                  <label
+                    >Nombres *<input
+                      [name]="'relativeFirst' + i"
+                      [(ngModel)]="relative.firstName"
+                      required
+                      maxlength="100" /></label
+                  ><label
+                    >Apellidos *<input
+                      [name]="'relativeLast' + i"
+                      [(ngModel)]="relative.lastName"
+                      required
+                      maxlength="100" /></label
+                  ><label
+                    >Género<input
+                      [name]="'relativeGender' + i"
+                      [(ngModel)]="relative.gender"
+                      maxlength="50" /></label
+                  ><label
+                    >Número de documento *<input
+                      [name]="'relativeDocument' + i"
+                      [(ngModel)]="relative.documentNumber"
+                      pattern="[A-Za-z0-9]{3,20}"
+                      maxlength="20"
+                      required
+                  /></label>
+                </div>
+              </div>
+            }
+            <div class="actions">
+              <button
+                class="secondary"
+                type="button"
+                (click)="addRelative('PADRE')"
+                [disabled]="hasParent('PADRE')"
+              >
+                Agregar padre</button
+              ><button
+                class="secondary"
+                type="button"
+                (click)="addRelative('MADRE')"
+                [disabled]="hasParent('MADRE')"
+              >
+                Agregar madre</button
+              ><button
+                class="secondary"
+                type="button"
+                (click)="addRelative('HIJO')"
+                [disabled]="model.relatives.length >= 30"
+              >
+                Agregar hijo/a
+              </button>
+            </div>
+          </fieldset>
+          @if (editable()) {
+            <div class="save-bar">
+              <button type="submit" [disabled]="busy()">
+                {{ busy() ? 'Procesando…' : 'Guardar ficha' }}
+              </button>
+              @if (dirty) {
+                <span>Hay cambios sin guardar.</span>
+              }
+            </div>
+          }
+        </form>
+        <section class="documents" aria-label="Documentos de la persona">
+          <h2>Documentos</h2>
+          @if (model.profile === 'ALUMNO') {
+            <p class="muted">Los alumnos no necesitan documentos laborales.</p>
+          }
+          @if (!editingId()) {
+            <p>Guarda la ficha para adjuntar documentos.</p>
+          } @else {
+            @if (can('edit')) {
+              @if (dirty) {
+                <p class="notice">Guarda los cambios de la ficha antes de adjuntar archivos.</p>
+              }
+              <div class="grid">
+                <label
+                  >Tipo de documento<select
+                    [(ngModel)]="kind"
+                    (ngModelChange)="relativeId = ''"
+                    [disabled]="busy() || dirty"
+                  >
+                    @for (item of availableKinds(); track item.value) {
+                      <option [value]="item.value">{{ item.label }}</option>
+                    }
+                  </select></label
+                >
+                @if (kind === 'DOCUMENTO_HIJO') {
+                  <label
+                    >Hijo/a<select [(ngModel)]="relativeId" [disabled]="busy() || dirty">
+                      <option value="">Seleccionar</option>
+                      @for (child of children(); track child.id) {
+                        <option [value]="child.id">
+                          {{ child.firstName }} {{ child.lastName }}
+                        </option>
+                      }
+                    </select></label
+                  >
+                }
+                <label
+                  >Archivo · JPG, PNG o PDF · máximo 5 MB<input
+                    #fileInput
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.pdf"
+                    (change)="selectFile($event)"
+                    [disabled]="busy() || dirty"
+                  /><button
+                    type="button"
+                    (click)="upload(fileInput)"
+                    [disabled]="!file || busy() || dirty"
+                  >
+                    Adjuntar archivo
+                  </button></label
+                >
+              </div>
+            }
+            <ul class="document-list">
+              @for (document of documents(); track document.id) {
+                <li>
+                  <div>
+                    <strong>{{ label(document.kind) }}</strong
+                    ><span
+                      >{{ document.originalName }} ·
+                      {{ document.createdAt | date: 'dd/MM/yyyy' }}</span
+                    >
+                    @if (document.relativeId) {
+                      <span>{{ relativeName(document.relativeId) }}</span>
+                    }
+                  </div>
+                  <div class="actions">
+                    <button
+                      type="button"
+                      class="secondary"
+                      (click)="download(document)"
+                      [disabled]="busy()"
+                    >
+                      Descargar
+                    </button>
+                    @if (can('edit')) {
+                      @if (pendingDelete === document.id) {
+                        <span>¿Eliminar este archivo?</span
+                        ><button
+                          type="button"
+                          class="danger"
+                          (click)="removeDocument(document)"
+                          [disabled]="busy()"
+                        >
+                          Sí, eliminar</button
+                        ><button
+                          type="button"
+                          class="secondary"
+                          (click)="pendingDelete = ''"
+                          [disabled]="busy()"
+                        >
+                          Cancelar
+                        </button>
+                      } @else {
+                        <button
+                          type="button"
+                          class="secondary"
+                          (click)="pendingDelete = document.id"
+                          [disabled]="busy()"
+                        >
+                          Eliminar
+                        </button>
+                      }
+                    }
+                  </div>
+                </li>
+              } @empty {
+                <li class="empty">Todavía no hay documentos adjuntos.</li>
+              }
+            </ul>
+          }
+        </section>
+      </section>
+    }
+  </div>
+</main>

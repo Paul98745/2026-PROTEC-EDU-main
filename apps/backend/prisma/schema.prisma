@@ -1,0 +1,284 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AccountStatus {
+  ACTIVA
+  INACTIVA
+  BLOQUEADA
+}
+
+model Institution {
+  id          String                  @id @default(uuid()) @db.Uuid
+  code        String
+  codePrefix  String                  @db.Char(1)
+  name        String
+  isActive    Boolean                 @default(true)
+  createdAt   DateTime                @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime                @updatedAt @db.Timestamptz(6)
+  memberships InstitutionMembership[]
+  roles       Role[]
+  auditEvents AuditEvent[]
+  sessions    Session[]
+  codeSequences InstitutionalCodeSequence[]
+  people        Person[]
+
+  @@unique([code])
+  @@map("institutions")
+}
+
+model User {
+  id                  String                  @id @default(uuid()) @db.Uuid
+  documentType        String?
+  documentNumber      String?
+  email               String?
+  passwordHash        String
+  isSuperAdministrator Boolean                @default(false)
+  mustChangePassword  Boolean                 @default(true)
+  status              AccountStatus           @default(INACTIVA)
+  failedLoginAttempts Int                     @default(0)
+  lockedAt            DateTime?               @db.Timestamptz(6)
+  createdAt           DateTime                @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime                @updatedAt @db.Timestamptz(6)
+  memberships         InstitutionMembership[]
+  auditEvents         AuditEvent[]            @relation("AuditActor")
+  sessions            Session[]
+  passwordResetTokens PasswordResetToken[]
+
+  @@unique([email])
+  @@unique([documentType, documentNumber])
+  @@index([status])
+  @@map("users")
+}
+
+model InstitutionMembership {
+  id            String      @id @default(uuid()) @db.Uuid
+  userId        String      @db.Uuid
+  institutionId String      @db.Uuid
+  studentCode   String?
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime    @updatedAt @db.Timestamptz(6)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+  userRoles     UserRole[]
+  person        Person?
+
+  @@unique([userId, institutionId])
+  @@unique([id, institutionId])
+  @@unique([institutionId, studentCode])
+  @@index([userId])
+  @@index([institutionId, isActive])
+  @@map("institution_memberships")
+}
+
+model InstitutionalCodeSequence {
+  id            String      @id @default(uuid()) @db.Uuid
+  institutionId String      @db.Uuid
+  academicYear  Int
+  period        Int
+  lastValue     Int         @default(0)
+  createdAt     DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime    @updatedAt @db.Timestamptz(6)
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  @@unique([institutionId, academicYear, period])
+  @@map("institutional_code_sequences")
+}
+
+model Role {
+  id            String           @id @default(uuid()) @db.Uuid
+  institutionId String           @db.Uuid
+  code          String
+  name          String
+  description   String?
+  isActive      Boolean          @default(true)
+  createdAt     DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime         @updatedAt @db.Timestamptz(6)
+  institution   Institution      @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+  userRoles     UserRole[]
+  permissions   RolePermission[]
+
+  @@unique([institutionId, code])
+  @@unique([id, institutionId])
+  @@index([institutionId, isActive])
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(uuid()) @db.Uuid
+  resource    String
+  action      String
+  description String?
+  createdAt   DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime         @updatedAt @db.Timestamptz(6)
+  roles       RolePermission[]
+
+  @@unique([resource, action])
+  @@map("permissions")
+}
+
+model UserRole {
+  membershipId  String                @db.Uuid
+  roleId        String                @db.Uuid
+  institutionId String                @db.Uuid
+  assignedAt    DateTime              @default(now()) @db.Timestamptz(6)
+  membership    InstitutionMembership @relation(fields: [membershipId, institutionId], references: [id, institutionId], onDelete: Cascade)
+  role          Role                  @relation(fields: [roleId, institutionId], references: [id, institutionId], onDelete: Restrict)
+
+  @@id([membershipId, roleId])
+  @@index([roleId])
+  @@index([institutionId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId       String     @db.Uuid
+  permissionId String     @db.Uuid
+  assignedAt   DateTime   @default(now()) @db.Timestamptz(6)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Restrict)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+model AuditEvent {
+  id            String       @id @default(uuid()) @db.Uuid
+  actorUserId   String?      @db.Uuid
+  institutionId String?      @db.Uuid
+  eventType     String
+  entityType    String?
+  entityId      String?      @db.Text
+  metadata      Json?
+  ip            String?      @db.VarChar(45)
+  userAgent     String?      @db.Text
+  occurredAt    DateTime     @default(now()) @db.Timestamptz(6)
+  actorUser     User?        @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  institution   Institution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+
+  @@index([occurredAt])
+  @@index([institutionId, occurredAt])
+  @@index([actorUserId, occurredAt])
+  @@index([eventType, occurredAt])
+  @@index([entityType, entityId])
+  @@map("audit_events")
+}
+
+model Session {
+  id             String      @id @default(uuid()) @db.Uuid
+  userId         String      @db.Uuid
+  institutionId  String      @db.Uuid
+  tokenHash      String      @unique
+  createdAt      DateTime    @default(now()) @db.Timestamptz(6)
+  lastActivityAt DateTime    @default(now()) @db.Timestamptz(6)
+  expiresAt      DateTime    @db.Timestamptz(6)
+  revokedAt      DateTime?   @db.Timestamptz(6)
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  institution    Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([institutionId, expiresAt])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  expiresAt DateTime  @db.Timestamptz(6)
+  usedAt    DateTime? @db.Timestamptz(6)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
+enum PersonProfile {
+  COLABORADOR
+  DOCENTE
+  ALUMNO
+}
+
+enum PersonStatus {
+  ACTIVO
+  INACTIVO
+  SUSPENDIDO
+}
+
+model Person {
+  id                 String @id @default(uuid()) @db.Uuid
+  institutionId      String @db.Uuid
+  membershipId       String? @unique @db.Uuid
+  profile            PersonProfile
+  status             PersonStatus @default(ACTIVO)
+  activatedAt        DateTime @default(now()) @db.Timestamptz(6)
+  firstName          String @db.VarChar(100)
+  middleName         String? @db.VarChar(100)
+  lastName           String @db.VarChar(100)
+  secondLastName     String? @db.VarChar(100)
+  gender             String? @db.VarChar(50)
+  maritalStatus      String? @db.VarChar(50)
+  documentType       String @db.VarChar(20)
+  documentNumber     String @db.VarChar(20)
+  personalEmail      String? @db.VarChar(254)
+  institutionalEmail String? @db.VarChar(254)
+  phone              String? @db.VarChar(30)
+  referencePhone     String? @db.VarChar(30)
+  country            String? @db.VarChar(100)
+  city               String? @db.VarChar(100)
+  district           String? @db.VarChar(100)
+  address            String? @db.VarChar(300)
+  createdAt          DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime @updatedAt @db.Timestamptz(6)
+  institution        Institution @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+  membership         InstitutionMembership? @relation(fields: [membershipId, institutionId], references: [id, institutionId], onDelete: Restrict)
+  relatives          PersonRelative[]
+  documents          PersonDocument[]
+
+  @@unique([institutionId, documentType, documentNumber])
+  @@unique([membershipId, institutionId])
+  @@index([institutionId, profile, status])
+  @@map("people")
+}
+
+model PersonRelative {
+  id             String @id @default(uuid()) @db.Uuid
+  personId       String @db.Uuid
+  relationship   String @db.VarChar(10)
+  firstName      String @db.VarChar(100)
+  lastName       String @db.VarChar(100)
+  gender         String? @db.VarChar(50)
+  documentNumber String @db.VarChar(20)
+  person         Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+  documents      PersonDocument[]
+
+  @@unique([id, personId])
+  @@index([personId])
+  @@map("person_relatives")
+}
+
+model PersonDocument {
+  id           String @id @default(uuid()) @db.Uuid
+  personId     String @db.Uuid
+  relativeId   String? @db.Uuid
+  kind         String @db.VarChar(30)
+  originalName String @db.VarChar(255)
+  storageKey   String @unique
+  mimeType     String @db.VarChar(100)
+  size         Int
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  person       Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+  relative     PersonRelative? @relation(fields: [relativeId, personId], references: [id, personId], onDelete: Restrict)
+
+  @@index([personId])
+  @@map("person_documents")
+}

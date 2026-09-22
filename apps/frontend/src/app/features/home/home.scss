@@ -1,0 +1,116 @@
+:host {
+  display: block;
+  min-height: 100dvh;
+}
+
+.home-shell {
+  background: #f4f8fb;
+  color: #132b46;
+  min-height: 100dvh;
+  padding: 1.5rem clamp(1.25rem, 7vw, 7rem);
+}
+header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: 72rem;
+}
+.brand {
+  color: #102c4b;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.07em;
+  text-decoration: none;
+}
+.brand span {
+  color: #0c7777;
+}
+.logout {
+  background: transparent;
+  border: 1px solid #b8c8d6;
+  border-radius: 0.5rem;
+  color: #254966;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 0.6rem 0.85rem;
+}
+.welcome-card {
+  background: linear-gradient(120deg, #0d3152, #126b71);
+  border-radius: 1rem;
+  color: #fff;
+  margin: 4.5rem auto 1.5rem;
+  max-width: 72rem;
+  padding: clamp(2rem, 5vw, 4rem);
+}
+.eyebrow {
+  color: #9cebe2;
+  font-size: 0.8rem;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  margin: 0 0 0.75rem;
+  text-transform: uppercase;
+}
+h1 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(2.3rem, 5vw, 4.5rem);
+  letter-spacing: -0.05em;
+  line-height: 1;
+  margin: 0;
+}
+.welcome-card > p:last-child {
+  color: #d2e6f0;
+  line-height: 1.6;
+  margin: 1.4rem 0 0;
+  max-width: 38rem;
+}
+.details {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 0 auto;
+  max-width: 72rem;
+}
+article {
+  background: #fff;
+  border: 1px solid #dce7ee;
+  border-radius: 0.8rem;
+  display: grid;
+  gap: 0.5rem;
+  padding: 1.35rem;
+}
+article span {
+  color: #60758a;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+article strong {
+  font-size: 1.1rem;
+}
+.loading {
+  color: #60758a;
+  text-align: center;
+  margin-top: 30vh;
+}
+
+.admin-link {
+  background: #0b6c70;
+  border-radius: 0.55rem;
+  color: #fff;
+  display: block;
+  font-weight: 750;
+  margin: 1.5rem auto 0;
+  max-width: 72rem;
+  padding: 0.9rem 1rem;
+  text-align: center;
+  text-decoration: none;
+}
+@media (max-width: 42rem) {
+  .details {
+    grid-template-columns: 1fr;
+  }
+  .welcome-card {
+    margin-top: 2.5rem;
+  }
+}

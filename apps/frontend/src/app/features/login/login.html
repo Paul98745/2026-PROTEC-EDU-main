@@ -1,0 +1,50 @@
+<main class="access-shell">
+  <section class="brand-panel" aria-label="ProtecEdu">
+    <a class="brand" routerLink="/ingresar">Protec<span>Edu</span></a>
+    <div class="brand-copy">
+      <p class="eyebrow">Espacio académico</p>
+      <h1>Tu educación, organizada para avanzar.</h1>
+      <p>Accede a tu institución con los datos proporcionados por tu centro educativo.</p>
+    </div>
+    <div class="brand-footnote">Acceso seguro · Sesión protegida</div>
+  </section>
+
+  <section class="form-panel" aria-labelledby="login-title">
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <p class="eyebrow">Bienvenido</p>
+      <h2 id="login-title">Ingresa a tu cuenta</h2>
+      <p class="form-intro">Usa el código de tu institución y tu código institucional.</p>
+
+      <label>
+        <span>Código de institución</span>
+        <input
+          autocomplete="organization"
+          formControlName="institutionCode"
+          placeholder="Ej. DEMO-EDU"
+        />
+      </label>
+      <label>
+        <span>Código institucional</span>
+        <input autocomplete="username" formControlName="studentCode" placeholder="Tu código" />
+      </label>
+      <label>
+        <span>Contraseña</span>
+        <input
+          autocomplete="current-password"
+          formControlName="password"
+          type="password"
+          placeholder="Tu contraseña"
+        />
+      </label>
+
+      @if (error()) {
+        <p class="form-error" role="alert">{{ error() }}</p>
+      }
+
+      <button type="submit" [disabled]="submitting()">
+        {{ submitting() ? 'Verificando…' : 'Ingresar' }}
+      </button>
+      <a class="recovery-link" routerLink="/recuperar">¿Olvidaste tu contraseña?</a>
+    </form>
+  </section>
+</main>
