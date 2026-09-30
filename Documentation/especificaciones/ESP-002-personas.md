@@ -49,3 +49,15 @@ Reiniciar el backend y actualizar la sesión en el navegador para ver el enlace 
 Pruebas unitarias de validación y autorización: `npm --prefix backend-erp-proteclinesac test`.
 Pruebas de API con PostgreSQL: `npm --prefix backend-erp-proteclinesac run test:people` (requiere TEST_DATABASE_URL local y distinta de desarrollo; usa registros temporales propios).
 Pruebas de interfaz: `npm --prefix frontend-erp-proteclinesac test -- --watch=false`.
+
+## Listas personales y ubicación geográfica
+
+Género es obligatorio en la ficha personal y se selecciona entre Masculino y Femenino. Estado civil ofrece Soltero/a, Casado/a, Divorciado/a y Viudo/a. Las formas anteriores se agrupan al editar; los géneros anteriores que no coincidan con las opciones requieren una nueva selección.
+
+El catálogo de Perú 2016 se integra en `backend-erp-proteclinesac/src/modules/people/data/ubigeo_peru_2016.json` y se incluye en la compilación del backend. Es una copia histórica de los tres PHP proporcionados, con 25 departamentos, 196 provincias y 1874 distritos. La API autenticada `GET /people/ubigeo` entrega esa jerarquía al formulario.
+
+País se muestra como Perú en un campo de solo lectura. Se seleccionan departamento, provincia y distrito en orden. Cambiar un padre limpia sus selecciones dependientes. La ubicación sigue siendo opcional, pero una selección iniciada debe completarse. La interfaz reemplaza Ciudad / localidad por Referencia, un texto opcional de hasta 300 caracteres que se guarda separado de Dirección. Los valores antiguos de ciudad se conservan en los datos existentes.
+
+La migración `20260930162000_add_people_ubigeo` incorpora departamento, provincia y UBIGEO a las fichas. El código distrital se guarda como texto de seis dígitos, conservando los ceros iniciales. La API valida que exista y que los nombres enviados correspondan a él; cuando solo se envía el código, obtiene los nombres del catálogo. Los domicilios antiguos sin código no reciben uno automáticamente.
+
+La migración `20260930165000_add_people_reference` añade el campo Referencia. Género se valida como obligatorio también en la API; los familiares mantienen su género opcional.

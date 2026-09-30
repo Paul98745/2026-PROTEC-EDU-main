@@ -1,12 +1,38 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { shareReplay } from 'rxjs';
+
+export const genders = ['Masculino', 'Femenino'];
+export const maritalStatuses = ['Soltero/a', 'Casado/a', 'Divorciado/a', 'Viudo/a'];
+export function normalizeMaritalStatus(value: string | null | undefined) {
+  const saved = (value ?? '').trim().toLowerCase();
+  return (
+    maritalStatuses.find((option) => {
+      const masculine = option.split('/')[0].toLowerCase();
+      return [option.toLowerCase(), masculine, masculine.slice(0, -1) + 'a'].includes(saved);
+    }) ?? ''
+  );
+}
+export interface UbigeoDistrict {
+  codigo: string;
+  nombre: string;
+}
+export interface UbigeoProvince extends UbigeoDistrict {
+  distritos: UbigeoDistrict[];
+}
+export interface UbigeoDepartment extends UbigeoDistrict {
+  provincias: UbigeoProvince[];
+}
+export interface UbigeoCatalog {
+  departamentos: UbigeoDepartment[];
+}
 
 export const fields = [
   { key: 'firstName', label: 'Primer nombre', required: true, max: 100, type: 'text' },
   { key: 'middleName', label: 'Segundo nombre', required: false, max: 100, type: 'text' },
   { key: 'lastName', label: 'Primer apellido', required: true, max: 100, type: 'text' },
   { key: 'secondLastName', label: 'Segundo apellido', required: false, max: 100, type: 'text' },
-  { key: 'gender', label: 'Género', required: false, max: 50, type: 'text' },
+  { key: 'gender', label: 'Género', required: true, max: 50, type: 'text' },
   { key: 'maritalStatus', label: 'Estado civil', required: false, max: 50, type: 'text' },
   { key: 'personalEmail', label: 'Correo personal', required: false, max: 254, type: 'email' },
   {
@@ -19,9 +45,10 @@ export const fields = [
   { key: 'phone', label: 'Teléfono', required: false, max: 30, type: 'tel' },
   { key: 'referencePhone', label: 'Teléfono de referencia', required: false, max: 30, type: 'tel' },
   { key: 'country', label: 'País', required: false, max: 100, type: 'text' },
-  { key: 'city', label: 'Ciudad', required: false, max: 100, type: 'text' },
+  { key: 'city', label: 'Ciudad / localidad', required: false, max: 100, type: 'text' },
   { key: 'district', label: 'Distrito', required: false, max: 100, type: 'text' },
   { key: 'address', label: 'Dirección', required: false, max: 300, type: 'text' },
+  { key: 'reference', label: 'Referencia', required: false, max: 300, type: 'text' },
 ] as const;
 export interface Relative {
   id?: string;
@@ -41,6 +68,9 @@ export interface PersonDocument {
   createdAt: string;
 }
 export type PersonForm = Record<(typeof fields)[number]['key'], string> & {
+  department: string;
+  province: string;
+  ubigeo: string;
   profile: string;
   status: string;
   activatedAt: string;
@@ -80,6 +110,12 @@ export class PeopleService {
   private readonly http = inject(HttpClient);
   private readonly url = 'http://localhost:3000/people';
   private readonly options = { withCredentials: true };
+  private readonly catalog = this.http
+    .get<UbigeoCatalog>(`${this.url}/ubigeo`, this.options)
+    .pipe(shareReplay({ bufferSize: 1, refCount: false }));
+  ubigeo() {
+    return this.catalog;
+  }
   list(search: string, page: number) {
     return this.http.get<{ items: PersonSummary[]; total: number; page: number }>(this.url, {
       ...this.options,

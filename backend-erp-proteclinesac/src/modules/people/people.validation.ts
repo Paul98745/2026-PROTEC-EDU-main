@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import Joi from 'joi';
+import { ubigeoLocations } from './ubigeo.catalog.js';
 
 export type RelativeInput = {
   id?: string;
@@ -27,9 +28,13 @@ export type PersonInput = {
   phone: string | null;
   referencePhone: string | null;
   country: string | null;
+  department: string | null;
+  province: string | null;
+  ubigeo: string | null;
   city: string | null;
   district: string | null;
   address: string | null;
+  reference: string | null;
   relatives: RelativeInput[];
 };
 const optionalText = (max = 100) =>
@@ -53,7 +58,11 @@ const schema = Joi.object({
   middleName: optionalText(),
   lastName: Joi.string().trim().max(100).required(),
   secondLastName: optionalText(),
-  gender: optionalText(50),
+  gender: Joi.string()
+    .trim()
+    .valid('Masculino', 'Femenino')
+    .insensitive()
+    .required(),
   maritalStatus: optionalText(50),
   documentType: Joi.string().valid('DNI', 'CE', 'PASAPORTE', 'RUC').required(),
   documentNumber: Joi.string().trim().uppercase().max(20).required(),
@@ -62,9 +71,17 @@ const schema = Joi.object({
   phone: optionalText(30),
   referencePhone: optionalText(30),
   country: optionalText(),
+  department: optionalText(),
+  province: optionalText(),
+  ubigeo: Joi.string()
+    .pattern(/^\d{6}$/)
+    .empty('')
+    .allow(null)
+    .default(null),
   city: optionalText(),
   district: optionalText(),
   address: optionalText(300),
+  reference: optionalText(300),
   relatives: Joi.array()
     .max(30)
     .items(
@@ -85,12 +102,55 @@ const schema = Joi.object({
 });
 
 export function validatePerson(input: unknown): PersonInput {
-  const { value, error } = schema.required().validate(input, { abortEarly: false });
+  const { value, error } = schema
+    .required()
+    .validate(input, { abortEarly: false });
   if (error)
     throw new BadRequestException(
       `Revisa los datos de la ficha: ${error.details.map((d) => d.path.join('.')).join(', ')}.`,
     );
   const person = value as PersonInput;
+  if (person.maritalStatus) {
+    const saved = person.maritalStatus.toLowerCase();
+    const status = ['Soltero/a', 'Casado/a', 'Divorciado/a', 'Viudo/a'].find(
+      (option) => {
+        const masculine = option.split('/')[0].toLowerCase();
+        return [
+          option.toLowerCase(),
+          masculine,
+          masculine.slice(0, -1) + 'a',
+        ].includes(saved);
+      },
+    );
+    if (!status)
+      throw new BadRequestException('Selecciona un estado civil válido.');
+    person.maritalStatus = status;
+  }
+  if (person.ubigeo) {
+    const location = ubigeoLocations.get(person.ubigeo);
+    if (!location)
+      throw new BadRequestException(
+        'El código UBIGEO no existe en el catálogo de Perú 2016.',
+      );
+    const country = person.country
+      ?.normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .toLowerCase();
+    if (
+      (country && country !== 'peru') ||
+      (person.department && person.department !== location.department) ||
+      (person.province && person.province !== location.province) ||
+      (person.district && person.district !== location.district)
+    )
+      throw new BadRequestException(
+        'El departamento, la provincia y el distrito deben corresponder al código UBIGEO.',
+      );
+    Object.assign(person, { country: 'Perú', ...location });
+  } else if (person.department || person.province) {
+    throw new BadRequestException(
+      'Completa departamento, provincia y distrito para guardar el UBIGEO.',
+    );
+  }
   const patterns: Record<string, RegExp> = {
     DNI: /^\d{8}$/,
     RUC: /^\d{11}$/,

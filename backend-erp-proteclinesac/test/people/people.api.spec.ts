@@ -25,6 +25,7 @@ describe('People API with PostgreSQL', () => {
   let personId: string;
   const base = {
     profile: 'ALUMNO',
+    gender: 'Femenino',
     firstName: 'Ana',
     lastName: 'Prueba',
     documentType: 'DNI',
@@ -197,6 +198,69 @@ describe('People API with PostgreSQL', () => {
       .set('Cookie', cookie())
       .send({ ...base, documentNumber: '1' })
       .expect(400);
+  });
+  it('serves the catalog with authentication and persists location during creation and edit', async () => {
+    await api().get('/people/ubigeo').expect(401);
+    const catalog = await api()
+      .get('/people/ubigeo')
+      .set('Cookie', cookie('reader'))
+      .expect(200);
+    expect(catalog.body.departamentos).toHaveLength(25);
+    const created = await api()
+      .post('/people')
+      .set('Cookie', cookie())
+      .send({
+        ...base,
+        documentNumber: '77889911',
+        ubigeo: '010102',
+        gender: 'Femenino',
+        maritalStatus: 'Soltero/a',
+        reference: 'Frente al parque',
+      })
+      .expect(201);
+    expect(created.body).toMatchObject({
+      country: 'Perú',
+      department: 'Amazonas',
+      province: 'Chachapoyas',
+      district: 'Asunción',
+      ubigeo: '010102',
+      gender: 'Femenino',
+      maritalStatus: 'Soltero/a',
+      reference: 'Frente al parque',
+    });
+    const updated = await api()
+      .put(`/people/${created.body.id}`)
+      .set('Cookie', cookie())
+      .send({
+        ...base,
+        documentNumber: '77889911',
+        ubigeo: '150101',
+        gender: 'Masculino',
+        maritalStatus: 'Casada',
+      })
+      .expect(200);
+    expect(updated.body).toMatchObject({
+      department: 'Lima',
+      province: 'Lima',
+      district: 'Lima',
+      ubigeo: '150101',
+    });
+    const saved = await api()
+      .get(`/people/${created.body.id}`)
+      .set('Cookie', cookie('reader'))
+      .expect(200);
+    expect(saved.body.ubigeo).toBe('150101');
+    await api()
+      .put(`/people/${created.body.id}`)
+      .set('Cookie', cookie())
+      .send({
+        ...base,
+        documentNumber: '77889911',
+        ubigeo: '010102',
+        province: 'Lima',
+      })
+      .expect(400);
+    await db.person.delete({ where: { id: created.body.id } });
   });
   it('lists and reads only within the session institution', async () => {
     const response = await api()

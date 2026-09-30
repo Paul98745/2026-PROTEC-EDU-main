@@ -1,0 +1,203 @@
+:host {
+  display: block;
+}
+.app-layout {
+  display: grid;
+  grid-template-columns: 16.5rem minmax(0, 1fr);
+  min-height: 100dvh;
+  background: var(--page);
+  color: var(--text);
+}
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem 1rem 1.25rem;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+}
+.brand {
+  color: var(--heading);
+  font-size: 1.6rem;
+  font-weight: 850;
+  letter-spacing: -0.07em;
+  text-decoration: none;
+  padding: 0 0.75rem;
+}
+.brand span {
+  color: var(--primary);
+}
+.nav-caption {
+  color: var(--muted);
+  font-size: 0.65rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  margin: 3rem 0.75rem 0.9rem;
+}
+nav {
+  display: grid;
+  gap: 0.4rem;
+}
+nav a {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.9rem 0.75rem;
+  border-radius: 0.65rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  font-weight: 650;
+  color: var(--text);
+  text-decoration: none;
+}
+nav a:hover {
+  background: var(--subtle);
+}
+nav a.active {
+  color: var(--primary);
+  background: var(--primary-soft);
+  box-shadow: inset 3px 0 var(--primary);
+}
+.nav-icon {
+  flex: 0 0 1.4rem;
+  width: 1.4rem;
+  height: 1.4rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.institution {
+  display: grid;
+  gap: 0.4rem;
+  margin: auto 0.75rem 0;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+.institution span,
+.institution small {
+  color: var(--muted);
+}
+.main-column {
+  min-width: 0;
+}
+.topbar {
+  min-height: 5.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem clamp(1rem, 3vw, 3rem);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.account,
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.account {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 650;
+}
+.palette-control {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 650;
+  flex-wrap: wrap;
+}
+.palette-dot {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  background: var(--primary);
+}
+select,
+button {
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  font: inherit;
+}
+button {
+  cursor: pointer;
+  font-weight: 650;
+  font-size: 0.85rem;
+}
+button:hover {
+  background: var(--subtle);
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.menu-toggle {
+  display: none;
+}
+.skip-link {
+  position: fixed;
+  top: -5rem;
+  left: 1rem;
+  z-index: 10;
+  padding: 0.8rem;
+  background: var(--surface);
+  color: var(--primary);
+}
+.skip-link:focus {
+  top: 1rem;
+}
+@media (max-width: 60rem) {
+  .app-layout {
+    grid-template-columns: 13rem minmax(0, 1fr);
+  }
+  .palette-control > span:not(.palette-dot) {
+    display: none;
+  }
+}
+@media (max-width: 42rem) {
+  .app-layout {
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar {
+    position: static;
+    height: auto;
+    padding: 1rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar nav,
+  .sidebar .institution,
+  .nav-caption {
+    display: none;
+  }
+  .sidebar.open nav {
+    display: grid;
+    margin-top: 1rem;
+  }
+  .menu-toggle {
+    display: block;
+  }
+  .topbar {
+    padding: 0.8rem 1rem;
+  }
+  .account,
+  .header-actions {
+    gap: 0.5rem;
+  }
+  .account > span {
+    display: none;
+  }
+}

@@ -1,6 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import {
   AdministrationService,
   AuditEvent,
@@ -10,7 +9,7 @@ import {
 } from './administration.service';
 
 @Component({
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule],
   selector: 'app-administration',
   styleUrl: './administration.scss',
   templateUrl: './administration.html',

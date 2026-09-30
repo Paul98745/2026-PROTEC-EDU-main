@@ -25,6 +25,7 @@ import { AuthService } from '../auth/auth.service.js';
 import { PeopleService } from './people.service.js';
 import { maxFileSize } from './people.validation.js';
 import type { Upload } from './people.validation.js';
+import { ubigeoCatalog } from './ubigeo.catalog.js';
 
 function token(request: Request, config: ConfigService) {
   const name = config.get<string>('SESSION_COOKIE_NAME', 'protecedu_session');
@@ -80,6 +81,10 @@ export class PeopleController {
   @Get('accounts')
   accounts(@Req() req: Request) {
     return this.people.accounts(token(req, this.config));
+  }
+  @Get('ubigeo')
+  ubigeo() {
+    return ubigeoCatalog;
   }
   @Get(':id')
   get(@Req() req: Request, @Param('id', ParseUUIDPipe) id: string) {

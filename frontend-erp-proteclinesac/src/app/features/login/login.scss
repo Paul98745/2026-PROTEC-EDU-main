@@ -10,8 +10,8 @@
 }
 
 .brand-panel {
-  background: linear-gradient(145deg, #0b1f3a, #123f68 60%, #0d6d72);
-  color: #f7fbff;
+  background: linear-gradient(145deg, var(--hero-start), var(--hero-middle) 60%, var(--hero-end));
+  color: var(--on-primary);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -27,7 +27,7 @@
 }
 
 .brand span {
-  color: #64e0d0;
+  color: var(--hero-accent);
 }
 
 .brand-copy {
@@ -35,7 +35,7 @@
 }
 
 .eyebrow {
-  color: #2b7c7d;
+  color: var(--primary);
   font-size: 0.8rem;
   font-weight: 750;
   letter-spacing: 0.1em;
@@ -44,7 +44,7 @@
 }
 
 .brand-panel .eyebrow {
-  color: #8eeee1;
+  color: var(--hero-accent);
 }
 
 h1,
@@ -60,7 +60,7 @@ h1 {
 }
 
 .brand-copy > p:last-child {
-  color: #c8dded;
+  color: var(--hero-text);
   font-size: 1.05rem;
   line-height: 1.65;
   margin: 1.5rem 0 0;
@@ -68,13 +68,13 @@ h1 {
 }
 
 .brand-footnote {
-  color: #a9c7dd;
+  color: var(--hero-text);
   font-size: 0.9rem;
 }
 
 .form-panel {
   align-items: center;
-  background: #f6fafc;
+  background: var(--page);
   display: flex;
   justify-content: center;
   padding: clamp(2rem, 6vw, 5.5rem);
@@ -90,19 +90,19 @@ form {
 }
 
 h2 {
-  color: #10253f;
+  color: var(--heading);
   font-size: 2.35rem;
   line-height: 1.08;
 }
 
 .form-intro {
-  color: #52677d;
+  color: var(--muted);
   line-height: 1.55;
   margin: 0.9rem 0 2rem;
 }
 
 label {
-  color: #213951;
+  color: var(--text);
   display: grid;
   font-size: 0.92rem;
   font-weight: 700;
@@ -111,26 +111,26 @@ label {
 }
 
 input {
-  background: #fff;
-  border: 1px solid #cbd8e3;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 0.65rem;
-  color: #132b46;
+  color: var(--text);
   font: inherit;
   min-height: 3rem;
   padding: 0 0.9rem;
 }
 
 input:focus {
-  border-color: #087879;
-  box-shadow: 0 0 0 3px rgb(8 120 121 / 16%);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--focus-ring);
   outline: none;
 }
 
 button {
-  background: #0c6c70;
+  background: var(--primary);
   border: 0;
   border-radius: 0.65rem;
-  color: #fff;
+  color: var(--on-primary);
   cursor: pointer;
   font: inherit;
   font-weight: 750;
@@ -140,7 +140,7 @@ button {
 }
 
 button:hover:not(:disabled) {
-  background: #07585c;
+  background: var(--primary-hover);
 }
 
 button:disabled {
@@ -149,16 +149,16 @@ button:disabled {
 }
 
 .form-error {
-  background: #fff0ee;
-  border-left: 3px solid #c5473e;
-  color: #8b302b;
+  background: var(--danger-bg);
+  border-left: 3px solid var(--danger);
+  color: var(--danger);
   line-height: 1.45;
   margin: 1.25rem 0 -0.2rem;
   padding: 0.75rem 0.85rem;
 }
 
 .recovery-link {
-  color: #0b6970;
+  color: var(--primary);
   display: block;
   font-size: 0.92rem;
   font-weight: 700;

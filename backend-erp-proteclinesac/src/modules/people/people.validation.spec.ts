@@ -6,6 +6,7 @@ import {
 
 const base = {
   profile: 'ALUMNO',
+  gender: 'Femenino',
   firstName: 'Ana',
   lastName: 'Pérez',
   documentType: 'DNI',
@@ -13,6 +14,55 @@ const base = {
   activatedAt: '2026-09-22',
 };
 describe('Person validation', () => {
+  it.each([undefined, null, '', 'Prefiero no decirlo', 'Otro'])(
+    'requires one of the two gender options: %s',
+    (gender) => {
+      expect(() => validatePerson({ ...base, gender })).toThrow();
+    },
+  );
+  it('normalizes previous marital status values and accepts the new reference', () => {
+    expect(
+      validatePerson({
+        ...base,
+        maritalStatus: 'Casada',
+        reference: ' Frente al parque ',
+      }),
+    ).toMatchObject({
+      maritalStatus: 'Casado/a',
+      reference: 'Frente al parque',
+    });
+    expect(() => validatePerson({ ...base, maritalStatus: 'Otro' })).toThrow();
+  });
+  it('derives the complete location from a six-digit string without losing leading zeros', () => {
+    expect(validatePerson({ ...base, ubigeo: '010102' })).toMatchObject({
+      country: 'Perú',
+      department: 'Amazonas',
+      province: 'Chachapoyas',
+      district: 'Asunción',
+      ubigeo: '010102',
+    });
+  });
+  it.each([
+    { ubigeo: 10102 },
+    { ubigeo: '10102' },
+    { ubigeo: '999999' },
+    { ubigeo: '010102', province: 'Bagua' },
+    { ubigeo: '010102', district: 'Lima' },
+    { ubigeo: '010102', country: 'Chile' },
+    { department: 'Amazonas' },
+  ])('rejects unknown or inconsistent UBIGEO inputs %j', (location) => {
+    expect(() => validatePerson({ ...base, ...location })).toThrow();
+  });
+  it('preserves legacy text locations without assigning an unverified code', () => {
+    expect(
+      validatePerson({
+        ...base,
+        country: 'Perú',
+        city: 'Lima',
+        district: 'San Juan',
+      }),
+    ).toMatchObject({ city: 'Lima', district: 'San Juan', ubigeo: null });
+  });
   it.each(['ALUMNO', 'DOCENTE', 'COLABORADOR'])(
     'allows %s to save before uploading documents',
     (profile) => {

@@ -16,6 +16,38 @@ describe('People form', () => {
     documents: [],
   };
   const api = {
+    ubigeo: vi.fn(() =>
+      of({
+        departamentos: [
+          {
+            codigo: '01',
+            nombre: 'Amazonas',
+            provincias: [
+              {
+                codigo: '0101',
+                nombre: 'Chachapoyas',
+                distritos: [
+                  { codigo: '010101', nombre: 'Chachapoyas' },
+                  { codigo: '010102', nombre: 'Asunción' },
+                ],
+              },
+              {
+                codigo: '0102',
+                nombre: 'Bagua',
+                distritos: [{ codigo: '010201', nombre: 'Bagua' }],
+              },
+            ],
+          },
+          {
+            codigo: '15',
+            nombre: 'Lima',
+            provincias: [
+              { codigo: '1501', nombre: 'Lima', distritos: [{ codigo: '150101', nombre: 'Lima' }] },
+            ],
+          },
+        ],
+      }),
+    ),
     list: vi.fn(() => of({ items: [], total: 0, page: 1 })),
     accounts: vi.fn(() => of([])),
     get: vi.fn(() => of(person)),
@@ -76,6 +108,11 @@ describe('People form', () => {
     }
     fixture.detectChanges();
     await fixture.whenStable();
+    const gender = fixture.nativeElement.querySelector('#gender') as HTMLSelectElement;
+    gender.value = 'Femenino';
+    gender.dispatchEvent(new Event('change', { bubbles: true }));
+    fixture.detectChanges();
+    await fixture.whenStable();
     const form = fixture.nativeElement.querySelector('.editor form') as HTMLFormElement;
     form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     fixture.detectChanges();
@@ -129,5 +166,109 @@ describe('People form', () => {
     component.removeRelative(0);
     expect(component.model.relatives).toHaveLength(1);
     expect(component.error()).toContain('Retira primero');
+  });
+  it('offers the requested options and clears descendants when location parents change', async () => {
+    const fixture = TestBed.createComponent(People);
+    fixture.detectChanges();
+    fixture.componentInstance.create();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const element = fixture.nativeElement as HTMLElement;
+    expect(
+      Array.from(element.querySelectorAll('#gender option')).map((o) => o.textContent?.trim()),
+    ).toEqual(['Seleccionar', 'Masculino', 'Femenino']);
+    expect(element.querySelectorAll('#maritalStatus option')).toHaveLength(5);
+    const change = async (name: string, value: string) => {
+      const select = element.querySelector(`select[name="${name}"]`) as HTMLSelectElement;
+      select.value = value;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      fixture.detectChanges();
+      await fixture.whenStable();
+    };
+    await change('departmentCode', '01');
+    expect(element.querySelectorAll('[name="provinceCode"] option')).toHaveLength(3);
+    await change('provinceCode', '0101');
+    await change('ubigeo', '010102');
+    expect(fixture.componentInstance.model).toMatchObject({
+      department: 'Amazonas',
+      province: 'Chachapoyas',
+      district: 'Asunción',
+      ubigeo: '010102',
+    });
+    await change('provinceCode', '0102');
+    expect(fixture.componentInstance.model.ubigeo).toBe('');
+    expect(fixture.componentInstance.model.district).toBe('');
+    await change('ubigeo', '010201');
+    await change('departmentCode', '15');
+    expect(fixture.componentInstance.provinceCode).toBe('');
+    expect(fixture.componentInstance.model.ubigeo).toBe('');
+    expect(fixture.componentInstance.model.province).toBe('');
+  });
+  it('requires gender, fixes Peru and submits the reference without a city control', async () => {
+    const fixture = TestBed.createComponent(People);
+    fixture.detectChanges();
+    fixture.componentInstance.create();
+    fixture.componentInstance.model.firstName = 'Ana';
+    fixture.componentInstance.model.lastName = 'Pérez';
+    fixture.componentInstance.model.documentNumber = '12345678';
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const element = fixture.nativeElement as HTMLElement;
+    const form = element.querySelector('.editor form') as HTMLFormElement;
+    const country = element.querySelector('input[name="country"]') as HTMLInputElement;
+    expect(country.readOnly).toBe(true);
+    expect(country.value).toBe('Perú');
+    expect(element.querySelector('[name="city"]')).toBeNull();
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    expect(api.save).not.toHaveBeenCalled();
+    const gender = element.querySelector('#gender') as HTMLSelectElement;
+    expect(gender.required).toBe(true);
+    gender.value = 'Masculino';
+    gender.dispatchEvent(new Event('change', { bubbles: true }));
+    const reference = element.querySelector('[name="reference"]') as HTMLInputElement;
+    reference.value = 'Frente al parque';
+    reference.dispatchEvent(new Event('input', { bubbles: true }));
+    fixture.detectChanges();
+    await fixture.whenStable();
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    expect(api.save).toHaveBeenCalledWith(
+      null,
+      expect.objectContaining({
+        gender: 'Masculino',
+        reference: 'Frente al parque',
+        country: 'Perú',
+      }),
+    );
+  });
+  it('restores a saved UBIGEO on edit and blocks an incomplete new location', async () => {
+    api.get.mockReturnValueOnce(
+      of({
+        ...person,
+        country: 'Perú',
+        department: 'Amazonas',
+        province: 'Chachapoyas',
+        district: 'Asunción',
+        ubigeo: '010102',
+        gender: 'Femenino',
+        maritalStatus: 'Soltera',
+      }),
+    );
+    const fixture = TestBed.createComponent(People);
+    fixture.detectChanges();
+    fixture.componentInstance.open('person-1');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('[name="ubigeo"]').value).toBe('010102');
+    expect(fixture.nativeElement.querySelector('#gender').value).toBe('Femenino');
+    expect(fixture.nativeElement.querySelector('#maritalStatus').value).toBe('Soltero/a');
+    fixture.componentInstance.departmentCode = '15';
+    fixture.componentInstance.departmentChanged();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.nativeElement
+      .querySelector('.editor form')
+      .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    expect(api.save).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.error()).toContain('Completa departamento');
   });
 });

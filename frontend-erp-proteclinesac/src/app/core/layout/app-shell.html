@@ -1,0 +1,91 @@
+<div class="app-layout">
+  <a class="skip-link" href="#section-content" (click)="content.focus(); $event.preventDefault()"
+    >Ir al contenido</a
+  >
+  <aside class="sidebar" [class.open]="menuOpen()">
+    <a class="brand" routerLink="/inicio" (click)="menuOpen.set(false)">Protec<span>Edu</span></a>
+    <p class="nav-caption">ESPACIO DE TRABAJO</p>
+    <nav id="main-navigation" aria-label="Menú principal">
+      <a
+        routerLink="/inicio"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
+        (click)="menuOpen.set(false)"
+      >
+        <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24">
+          <path d="m3 10 9-7 9 7v10H3Z" />
+          <path d="M9 20v-7h6v7" />
+        </svg>
+        Inicio
+      </a>
+      @if (auth.user()?.permissions?.includes('users.view')) {
+        <a
+          routerLink="/administracion"
+          routerLinkActive="active"
+          ariaCurrentWhenActive="page"
+          (click)="menuOpen.set(false)"
+        >
+          <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24">
+            <circle cx="9" cy="7" r="3" />
+            <path d="M3 21v-3a6 6 0 0 1 12 0v3M17 4a3 3 0 0 1 0 6m1 4a5 5 0 0 1 3 4v3" />
+          </svg>
+          Administrar usuarios
+        </a>
+      }
+      @if (auth.user()?.isSuperAdministrator || auth.user()?.permissions?.includes('people.view')) {
+        <a
+          routerLink="/personas"
+          routerLinkActive="active"
+          ariaCurrentWhenActive="page"
+          (click)="menuOpen.set(false)"
+        >
+          <svg class="nav-icon" aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M5 3h10l4 4v14H5Z" />
+            <path d="M14 3v5h5M8 12h8M8 16h8" />
+          </svg>
+          Gestionar personas y documentos
+        </a>
+      }
+    </nav>
+    <div class="institution">
+      <span>Institución</span>
+      <strong>{{ auth.user()?.institution?.name }}</strong>
+      <small>{{ auth.user()?.institution?.code }}</small>
+    </div>
+  </aside>
+  <div class="main-column">
+    <header class="topbar">
+      <div class="account">
+        <button
+          class="menu-toggle"
+          type="button"
+          aria-controls="main-navigation"
+          [attr.aria-expanded]="menuOpen()"
+          (click)="menuOpen.set(!menuOpen())"
+        >
+          Menú
+        </button>
+        <span>{{ auth.user()?.studentCode }}</span>
+      </div>
+      <div class="header-actions">
+        <label class="palette-control">
+          <span class="palette-dot" aria-hidden="true"></span>
+          <span>Paleta de colores</span>
+          <select
+            aria-label="Paleta de colores"
+            [ngModel]="theme.selected()"
+            (ngModelChange)="theme.select($event)"
+          >
+            @for (palette of theme.palettes; track palette.id) {
+              <option [value]="palette.id">{{ palette.name }}</option>
+            }
+          </select>
+        </label>
+        <button class="logout" type="button" (click)="logout()" [disabled]="leaving()">
+          {{ leaving() ? 'Cerrando…' : 'Cerrar sesión' }}
+        </button>
+      </div>
+    </header>
+    <div #content id="section-content" tabindex="-1"><router-outlet /></div>
+  </div>
+</div>

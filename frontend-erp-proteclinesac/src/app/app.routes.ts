@@ -7,23 +7,31 @@ import { Login } from './features/login/login';
 import { Recovery } from './features/recovery/recovery';
 import { ResetPassword } from './features/recovery/reset-password';
 import { peopleGuard } from './features/people/people.guard';
+import { AppShell } from './core/layout/app-shell';
 
 export const routes: Routes = [
-  {
-    path: 'personas',
-    loadComponent: () => import('./features/people/people').then((m) => m.People),
-    canActivate: [authGuard, peopleGuard],
-    title: 'Personas · ProtecEdu',
-  },
   { path: 'ingresar', component: Login, title: 'Ingresar · ProtecEdu' },
   { path: 'recuperar', component: Recovery, title: 'Recuperar acceso · ProtecEdu' },
   { path: 'restablecer', component: ResetPassword, title: 'Nueva contraseña · ProtecEdu' },
-  { path: 'inicio', component: Home, canActivate: [authGuard], title: 'Inicio · ProtecEdu' },
   {
-    path: 'administracion',
-    component: Administration,
+    path: '',
+    component: AppShell,
     canActivate: [authGuard],
-    title: 'Administración · ProtecEdu',
+    children: [
+      { path: 'inicio', component: Home, canActivate: [authGuard], title: 'Inicio · ProtecEdu' },
+      {
+        path: 'administracion',
+        component: Administration,
+        canActivate: [authGuard],
+        title: 'Administrar usuarios · ProtecEdu',
+      },
+      {
+        path: 'personas',
+        loadComponent: () => import('./features/people/people').then((m) => m.People),
+        canActivate: [authGuard, peopleGuard],
+        title: 'Personas · ProtecEdu',
+      },
+    ],
   },
   {
     path: 'cambiar-contrasena',

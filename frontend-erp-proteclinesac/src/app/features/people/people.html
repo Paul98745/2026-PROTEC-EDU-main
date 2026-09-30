@@ -1,8 +1,4 @@
 <main class="people-shell">
-  <header>
-    <a class="brand" routerLink="/inicio">Protec<span>Edu</span></a
-    ><a routerLink="/inicio">Volver al inicio</a>
-  </header>
   <section class="intro">
     <p class="eyebrow">{{ auth.user()?.institution?.name }}</p>
     <h1>Personas</h1>
@@ -150,19 +146,105 @@
             <legend>Datos personales y contacto</legend>
             <div class="grid">
               @for (field of fields; track field.key) {
-                <label
-                  >{{ field.label }}{{ field.required ? ' *' : ''
-                  }}<input
-                    [id]="field.key"
-                    [type]="field.type"
-                    [name]="field.key"
-                    [(ngModel)]="model[field.key]"
-                    [required]="field.required"
-                    [maxlength]="field.max"
-                    [email]="field.type === 'email'"
-                /></label>
+                <label [for]="field.key"
+                  >{{ field.label }}{{ field.required ? ' *' : '' }}
+                  @if (field.key === 'gender' || field.key === 'maritalStatus') {
+                    <select
+                      [id]="field.key"
+                      [name]="field.key"
+                      [(ngModel)]="model[field.key]"
+                      [required]="field.required"
+                    >
+                      <option value="">Seleccionar</option>
+                      @for (
+                        option of field.key === 'gender' ? genders : maritalStatuses;
+                        track option
+                      ) {
+                        <option [value]="option">{{ option }}</option>
+                      }
+                    </select>
+                  } @else {
+                    <input
+                      [id]="field.key"
+                      [type]="field.type"
+                      [name]="field.key"
+                      [(ngModel)]="model[field.key]"
+                      [required]="field.required"
+                      [maxlength]="field.max"
+                      [email]="field.type === 'email'"
+                    />
+                  }
+                </label>
               }
+              <label>País<input name="country" value="Perú" readonly /></label>
+              <label
+                >Departamento<select
+                  name="departmentCode"
+                  [(ngModel)]="departmentCode"
+                  (ngModelChange)="departmentChanged()"
+                  [disabled]="ubigeoLoading() || !departments().length"
+                >
+                  <option value="">Seleccionar departamento</option>
+                  @for (department of departments(); track department.codigo) {
+                    <option [value]="department.codigo">{{ department.nombre }}</option>
+                  }
+                </select></label
+              >
+              <label
+                >Provincia<select
+                  name="provinceCode"
+                  [(ngModel)]="provinceCode"
+                  (ngModelChange)="provinceChanged()"
+                  [disabled]="!departmentCode || ubigeoLoading()"
+                  [required]="!!departmentCode"
+                >
+                  <option value="">Seleccionar provincia</option>
+                  @for (province of provinces(); track province.codigo) {
+                    <option [value]="province.codigo">{{ province.nombre }}</option>
+                  }
+                </select></label
+              >
+              <label
+                >Distrito<select
+                  name="ubigeo"
+                  [(ngModel)]="model.ubigeo"
+                  (ngModelChange)="districtChanged()"
+                  [disabled]="!provinceCode || ubigeoLoading()"
+                  [required]="!!departmentCode"
+                >
+                  <option value="">Seleccionar distrito</option>
+                  @for (district of districts(); track district.codigo) {
+                    <option [value]="district.codigo">{{ district.nombre }}</option>
+                  }
+                </select></label
+              >
+              <label
+                >Referencia<input name="reference" [(ngModel)]="model.reference" maxlength="300"
+              /></label>
+              <label
+                >Dirección<input name="address" [(ngModel)]="model.address" maxlength="300"
+              /></label>
             </div>
+            @if (ubigeoLoading()) {
+              <p class="muted" role="status">Cargando ubicaciones…</p>
+            }
+            @if (ubigeoError()) {
+              <p class="notice error" role="alert">
+                {{ ubigeoError() }}
+                <button type="button" class="secondary" (click)="loadUbigeo()">Reintentar</button>
+              </p>
+            }
+            @if (model.ubigeo) {
+              <p class="muted">
+                Código UBIGEO: <strong>{{ model.ubigeo }}</strong>
+              </p>
+            }
+            @if (model.country === 'Perú' && model.district && !model.ubigeo) {
+              <p class="muted">
+                Distrito guardado anteriormente: {{ model.district }}. Selecciona su departamento,
+                provincia y distrito para asociar un código UBIGEO.
+              </p>
+            }
           </fieldset>
           <fieldset [disabled]="busy() || !editable() || !can('edit')">
             <legend>Cuenta de acceso</legend>
@@ -218,10 +300,12 @@
                       required
                       maxlength="100" /></label
                   ><label
-                    >Género<input
-                      [name]="'relativeGender' + i"
-                      [(ngModel)]="relative.gender"
-                      maxlength="50" /></label
+                    >Género<select [name]="'relativeGender' + i" [(ngModel)]="relative.gender">
+                      <option value="">Seleccionar</option>
+                      @for (option of genders; track option) {
+                        <option [value]="option">{{ option }}</option>
+                      }
+                    </select></label
                   ><label
                     >Número de documento *<input
                       [name]="'relativeDocument' + i"

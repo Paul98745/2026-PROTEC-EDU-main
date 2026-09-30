@@ -1,21 +1,19 @@
 :host {
   display: block;
-  min-height: 100dvh;
+  min-height: calc(100dvh - 5.5rem);
 }
 .people-shell {
-  background: #f4f8fb;
-  color: #173550;
-  min-height: 100dvh;
+  background: var(--page);
+  color: var(--text);
+  min-height: calc(100dvh - 5.5rem);
   padding: 1.5rem clamp(1rem, 4vw, 4rem) 4rem;
 }
-header,
 .intro,
 .workspace,
 .notice {
   max-width: 88rem;
   margin-inline: auto;
 }
-header,
 .panel-title,
 .pagination,
 .actions,
@@ -27,20 +25,14 @@ header,
   flex-wrap: wrap;
 }
 a {
-  color: #23616f;
+  color: var(--primary);
 }
-.brand {
-  font-size: 1.4rem;
-  font-weight: 850;
-  text-decoration: none;
-  color: #13304b;
-}
-.brand span,
+
 .eyebrow {
-  color: #087276;
+  color: var(--primary);
 }
 .intro {
-  margin-block: 2.5rem 2rem;
+  margin-block: 0 2rem;
 }
 .eyebrow {
   text-transform: uppercase;
@@ -69,8 +61,8 @@ h3 {
   grid-template-columns: minmax(17rem, 0.65fr) minmax(0, 1.5fr);
 }
 .panel {
-  background: white;
-  border: 1px solid #dbe6ed;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 1rem;
   padding: clamp(1rem, 2vw, 1.75rem);
   min-width: 0;
@@ -95,15 +87,15 @@ select {
   width: 100%;
   min-width: 0;
   padding: 0.7rem;
-  border: 1px solid #adbfcd;
+  border: 1px solid var(--border);
   border-radius: 0.45rem;
-  background: white;
-  color: #173550;
+  background: var(--surface);
+  color: var(--text);
 }
 button {
-  border: 1px solid #087276;
-  background: #087276;
-  color: white;
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: var(--on-primary);
   border-radius: 0.45rem;
   padding: 0.65rem 0.9rem;
   cursor: pointer;
@@ -113,23 +105,23 @@ button:disabled {
   cursor: default;
 }
 .secondary {
-  color: #23616f;
-  background: white;
-  border-color: #adbfcd;
+  color: var(--primary);
+  background: var(--surface);
+  border-color: var(--border);
 }
 .danger {
-  background: #a32230;
-  border-color: #a32230;
+  background: var(--danger);
+  border-color: var(--danger);
 }
 input:focus-visible,
 select:focus-visible,
 button:focus-visible,
 a:focus-visible {
-  outline: 3px solid #42a8c2;
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 input.ng-invalid.ng-touched {
-  border-color: #b52737;
+  border-color: var(--danger);
 }
 .grid {
   display: grid;
@@ -138,7 +130,7 @@ input.ng-invalid.ng-touched {
 }
 fieldset {
   border: 0;
-  border-top: 1px solid #dbe6ed;
+  border-top: 1px solid var(--border);
   padding: 1.3rem 0;
   margin: 1rem 0 0;
   min-width: 0;
@@ -149,7 +141,7 @@ legend {
 }
 .muted,
 small {
-  color: #526a7d;
+  color: var(--muted);
   font-weight: 400;
   line-height: 1.5;
 }
@@ -168,27 +160,27 @@ small {
   display: grid;
   gap: 0.35rem;
   width: 100%;
-  background: white;
-  color: #173550;
-  border: 1px solid #dbe6ed;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
   margin-bottom: 0.6rem;
   padding: 1rem;
 }
 .person-row.selected {
-  background: #ecf8f5;
-  border-color: #087276;
+  background: var(--primary-soft);
+  border-color: var(--primary);
 }
 .meta {
   font-size: 0.75rem;
-  color: #526a7d;
+  color: var(--muted);
 }
 .empty {
   padding: 1.5rem 0;
-  color: #526a7d;
+  color: var(--muted);
 }
 .relative {
   padding: 1rem;
-  background: #f4f8fb;
+  background: var(--page);
   border-radius: 0.6rem;
   margin-bottom: 1rem;
 }
@@ -197,7 +189,7 @@ small {
   padding: 1rem 0;
 }
 .documents {
-  border-top: 1px solid #dbe6ed;
+  border-top: 1px solid var(--border);
   padding-top: 1.5rem;
   margin-top: 1rem;
 }
@@ -206,7 +198,7 @@ small {
 }
 .document-list li {
   padding: 1rem 0;
-  border-top: 1px solid #dbe6ed;
+  border-top: 1px solid var(--border);
   overflow-wrap: anywhere;
 }
 .document-list li > div:first-child {
@@ -220,17 +212,17 @@ small {
 .notice {
   padding: 0.9rem;
   border-radius: 0.5rem;
-  background: #edf4fa;
+  background: var(--subtle);
   margin-bottom: 1rem;
   box-sizing: border-box;
 }
 .error {
-  background: #fff0f0;
-  color: #92232d;
+  background: var(--danger-bg);
+  color: var(--danger);
 }
 .success {
-  background: #e8f6ef;
-  color: #16563c;
+  background: var(--success-bg);
+  color: var(--success);
 }
 @media (max-width: 1000px) {
   .with-form {

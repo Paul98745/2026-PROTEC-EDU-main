@@ -1,13 +1,16 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import {
   Account,
   documentKinds,
   fields,
+  genders,
+  maritalStatuses,
+  normalizeMaritalStatus,
+  UbigeoDepartment,
   Person,
   PersonDocument,
   PersonForm,
@@ -29,10 +32,14 @@ export function emptyPerson(): PersonForm {
     institutionalEmail: '',
     phone: '',
     referencePhone: '',
-    country: '',
+    country: 'Perú',
+    department: '',
+    province: '',
+    ubigeo: '',
     city: '',
     district: '',
     address: '',
+    reference: '',
     profile: 'ALUMNO',
     status: 'ACTIVO',
     activatedAt: localDate.toISOString().slice(0, 10),
@@ -44,14 +51,23 @@ export function emptyPerson(): PersonForm {
 }
 @Component({
   selector: 'app-people',
-  imports: [FormsModule, RouterLink, DatePipe],
+  imports: [FormsModule, DatePipe],
   templateUrl: './people.html',
   styleUrl: './people.scss',
 })
 export class People implements OnInit {
   readonly auth = inject(AuthService);
   private readonly api = inject(PeopleService);
-  readonly fields = fields;
+  readonly fields = fields.filter(
+    (field) => !['country', 'city', 'district', 'address', 'reference'].includes(field.key),
+  );
+  readonly genders = genders;
+  readonly maritalStatuses = maritalStatuses;
+  readonly departments = signal<UbigeoDepartment[]>([]);
+  readonly ubigeoLoading = signal(false);
+  readonly ubigeoError = signal('');
+  departmentCode = '';
+  provinceCode = '';
   readonly items = signal<PersonSummary[]>([]);
   readonly accounts = signal<Account[]>([]);
   readonly documents = signal<PersonDocument[]>([]);
@@ -81,6 +97,7 @@ export class People implements OnInit {
     return this.editingId() ? this.can('edit') : this.can('create');
   }
   ngOnInit() {
+    this.loadUbigeo();
     this.reload();
     if (this.can('edit'))
       this.api
@@ -109,6 +126,8 @@ export class People implements OnInit {
   }
   create() {
     this.model = emptyPerson();
+    this.departmentCode = '';
+    this.provinceCode = '';
     this.editingId.set(null);
     this.documents.set([]);
     this.showForm.set(true);
@@ -126,6 +145,15 @@ export class People implements OnInit {
     const model = emptyPerson();
     for (const field of fields) model[field.key] = person[field.key] ?? '';
     Object.assign(model, {
+      country: 'Perú',
+      gender:
+        genders.find(
+          (value) => value.toLowerCase() === (person.gender ?? '').trim().toLowerCase(),
+        ) ?? '',
+      maritalStatus: normalizeMaritalStatus(person.maritalStatus),
+      department: person.department ?? '',
+      province: person.province ?? '',
+      ubigeo: person.ubigeo ?? '',
       profile: person.profile,
       status: person.status,
       activatedAt: person.activatedAt.slice(0, 10),
@@ -137,11 +165,15 @@ export class People implements OnInit {
         relationship: r.relationship,
         firstName: r.firstName,
         lastName: r.lastName,
-        gender: r.gender ?? '',
+        gender:
+          genders.find((value) => value.toLowerCase() === (r.gender ?? '').trim().toLowerCase()) ??
+          '',
         documentNumber: r.documentNumber,
       })),
     });
     this.model = model;
+    this.departmentCode = model.ubigeo.slice(0, 2);
+    this.provinceCode = model.ubigeo.slice(0, 4);
     this.editingId.set(person.id);
     this.documents.set(person.documents);
     this.showForm.set(true);
@@ -159,6 +191,47 @@ export class People implements OnInit {
   close() {
     this.showForm.set(false);
     this.resetState();
+  }
+  loadUbigeo() {
+    this.ubigeoLoading.set(true);
+    this.ubigeoError.set('');
+    this.api
+      .ubigeo()
+      .pipe(finalize(() => this.ubigeoLoading.set(false)))
+      .subscribe({
+        next: (catalog) => this.departments.set(catalog.departamentos),
+        error: () =>
+          this.ubigeoError.set(
+            'No se pudo cargar el catálogo de ubicaciones. Inténtalo nuevamente.',
+          ),
+      });
+  }
+  provinces() {
+    return this.departments().find((d) => d.codigo === this.departmentCode)?.provincias ?? [];
+  }
+  districts() {
+    return this.provinces().find((p) => p.codigo === this.provinceCode)?.distritos ?? [];
+  }
+  departmentChanged() {
+    this.model.department =
+      this.departments().find((d) => d.codigo === this.departmentCode)?.nombre ?? '';
+    this.provinceCode = '';
+    this.model.province = '';
+    this.model.district = '';
+    this.model.ubigeo = '';
+    this.dirty = true;
+  }
+  provinceChanged() {
+    this.model.province =
+      this.provinces().find((p) => p.codigo === this.provinceCode)?.nombre ?? '';
+    this.model.district = '';
+    this.model.ubigeo = '';
+    this.dirty = true;
+  }
+  districtChanged() {
+    this.model.district =
+      this.districts().find((d) => d.codigo === this.model.ubigeo)?.nombre ?? '';
+    this.dirty = true;
   }
   profileChanged() {
     this.kind = 'IDENTIDAD_ANVERSO';
@@ -214,6 +287,11 @@ export class People implements OnInit {
     this.dirty = true;
   }
   save(form: NgForm) {
+    if ((this.departmentCode || this.provinceCode) && !this.model.ubigeo) {
+      form.control.markAllAsTouched();
+      this.error.set('Completa departamento, provincia y distrito antes de guardar.');
+      return;
+    }
     if (form.invalid || this.busy()) {
       form.control.markAllAsTouched();
       this.error.set(
